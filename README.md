@@ -12,11 +12,11 @@ pinned: true
 
 > A multi-agent AI system that researches any topic on the web, synthesises a structured report, and publishes it as a blog post — all in real time.
 
-![ResearchAI Home](screenshots/researchai_home.png)
+![ResearchAI Home](screenshots/home.png)
 
 ## Live Demo
 
-[![Hugging Face Spaces](https://img.shields.io/badge/🤗%20HF%20Spaces-Live%20Demo-yellow)](https://huggingface.co/spaces/ankitsharma6652/researchai)
+[![Render](https://img.shields.io/badge/Render-Live%20Demo-46E3B7?logo=render)](https://researchai.onrender.com)
 [![GitHub](https://img.shields.io/badge/GitHub-Source%20Code-black?logo=github)](https://github.com/ankitsharma6652/researchai)
 
 ---
@@ -25,7 +25,29 @@ pinned: true
 
 Type any topic → 4 parallel AI agents plan, research, synthesise, and compile a full structured report with sources — streamed live to your browser. Then convert it to a blog post and publish to dev.to or LinkedIn in one click.
 
-![Blog Editor](screenshots/researchai_blog.png)
+---
+
+## Screenshots
+
+### Home — Enter your research topic
+
+![ResearchAI Home](screenshots/home.png)
+
+### Live Pipeline — Watch every agent step stream in real time
+
+![Live Pipeline](screenshots/pipeline.png)
+
+### Output — Full structured report with sources
+
+![Research Output](screenshots/output.png)
+
+### Blog Editor — Edit, preview, publish
+
+![Blog Editor](screenshots/blog.png)
+
+### Research in progress
+
+![Generating](screenshots/generating.png)
 
 ---
 
@@ -57,7 +79,7 @@ Blog Generator + Publisher  ──── dev.to / LinkedIn
 - **LangGraph multi-agent graph** — parallel section research using `Send()` fan-out
 - **Real-time SSE streaming** — every agent step streams live to the browser
 - **Multi-provider LLM** — Groq, Gemini, OpenAI, NVIDIA NIM, any OpenAI-compatible endpoint
-- **Tavily web search** — live internet research
+- **Tavily web search** — live internet research, not hallucinations
 - **Markdown editor** — full editor with live preview, Mermaid diagrams, syntax highlighting
 - **One-click publish** — dev.to API + LinkedIn UGC Posts v2
 
@@ -74,12 +96,11 @@ Blog Generator + Publisher  ──── dev.to / LinkedIn
 | Streaming | Server-Sent Events (SSE) |
 | Frontend | Vanilla JS + Marked.js + Highlight.js + Mermaid.js |
 | Publish | dev.to v1 API, LinkedIn UGC Posts v2 |
+| Hosting | Render (free, keep-alive) |
 
 ---
 
 ## Environment Variables
-
-Set these as **HF Spaces Secrets** (or in `.env` locally):
 
 | Variable | Where to get it |
 |---|---|
