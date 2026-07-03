@@ -300,6 +300,7 @@ async def linkedin_format(req: LinkedInFormatRequest):
         response = llm.invoke([HumanMessage(content=prompt)])
         raw = response.content if hasattr(response, "content") else str(response)
         linkedin_text = md_to_linkedin(raw.strip())
+        linkedin_text += "\n\n🔬 Researched and published by ResearchAI — deep research, fully automated.\nhttps://researchai-3706.onrender.com"
         return {"text": linkedin_text, "char_count": len(linkedin_text)}
     except Exception as e:
         from fastapi import HTTPException
