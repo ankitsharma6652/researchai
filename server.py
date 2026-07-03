@@ -453,9 +453,10 @@ async def blog_publish(req: BlogPublishRequest):
     clean_tags = [re.sub(r'[^a-z0-9]', '', t.lower()) for t in req.tags]
     clean_tags = [t for t in clean_tags if t][:4]
 
+    _attribution = "\n\n---\n*🔬 Researched and published by [ResearchAI](https://researchai-3706.onrender.com) — deep research, fully automated.*"
     article_body = {
         "title":         req.title,
-        "body_markdown": req.markdown,
+        "body_markdown": req.markdown + _attribution,
         "published":     req.published,
         "tags":          clean_tags,
     }
