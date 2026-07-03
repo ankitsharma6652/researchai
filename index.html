@@ -1071,6 +1071,29 @@ option { background: #0d1117; }
         </div>
       </div>
 
+      <!-- LinkedIn -->
+      <div class="mfield full" style="margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <span style="background:#0a66c2;border-radius:4px;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;">in</span>
+          LinkedIn
+          <span id="liConnectedBadge" style="display:none;font-size:10px;font-weight:700;background:#16a34a22;color:#16a34a;border-radius:4px;padding:2px 6px;">● Connected</span>
+          <span id="liNotConnectedBadge" style="font-size:10px;font-weight:700;background:var(--s2);color:var(--t3);border-radius:4px;padding:2px 6px;">Not connected</span>
+        </label>
+      </div>
+      <div class="mfield">
+        <label>🔑 LINKEDIN_ACCESS_TOKEN</label>
+        <div class="fw"><span class="fi">🔑</span>
+          <input type="password" id="liToken" placeholder="Access token from LinkedIn Developer Portal" autocomplete="off" oninput="updateLiConnectionBadge()" />
+          <button class="eye" onclick="toggleKey('liToken',this)">👁</button>
+        </div>
+      </div>
+      <div class="mfield">
+        <label>🆔 LINKEDIN_AUTHOR_URN <span style="color:var(--t3);font-weight:400">— e.g. urn:li:person:XXXXXX</span></label>
+        <div class="fw"><span class="fi">🆔</span>
+          <input type="text" id="liUrn" placeholder="urn:li:person:XXXXXX" autocomplete="off" oninput="updateLiConnectionBadge()" style="padding-left:32px;" />
+        </div>
+      </div>
+
       <div class="mfield">
         <label>Temperature</label>
         <div class="fw"><span class="fi">🌡</span>
@@ -1134,6 +1157,13 @@ function onModelChange(){
   const base=opt.getAttribute('data-base');
   if(base) document.getElementById('apiBase').value=base;
 }
+function updateLiConnectionBadge(){
+  const t=document.getElementById('liToken').value.trim();
+  const u=document.getElementById('liUrn').value.trim();
+  const connected=t&&u;
+  document.getElementById('liConnectedBadge').style.display=connected?'':'none';
+  document.getElementById('liNotConnectedBadge').style.display=connected?'none':'';
+}
 function saveConfig(){
   localStorage.setItem('rai',JSON.stringify({
     mv: document.getElementById('cfgModel').value,
@@ -1142,7 +1172,9 @@ function saveConfig(){
     ok: document.getElementById('openaiKey').value,
     ek: document.getElementById('euronKey').value,
     ab: document.getElementById('apiBase').value,
-    tk: document.getElementById('tavilyKey').value
+    tk: document.getElementById('tavilyKey').value,
+    lt: document.getElementById('liToken').value,
+    lu: document.getElementById('liUrn').value
   }));
   const m=document.getElementById('saveMsg');m.style.display='inline';setTimeout(()=>m.style.display='none',2000);
 }
@@ -1155,7 +1187,10 @@ function loadConfig(){
   if(c.ek)document.getElementById('euronKey').value=c.ek;
   if(c.ab)document.getElementById('apiBase').value=c.ab;
   if(c.tk)document.getElementById('tavilyKey').value=c.tk;
+  if(c.lt)document.getElementById('liToken').value=c.lt;
+  if(c.lu)document.getElementById('liUrn').value=c.lu;
   onModelChange();
+  updateLiConnectionBadge();
 }
 loadConfig();
 
@@ -1395,7 +1430,10 @@ async function postToLinkedIn(){
   btn.disabled=true; btn.textContent='⏳ Posting…';
   liSetStatus('🚀 Posting to LinkedIn…','info');
   try{
-    const res=await fetch('/api/linkedin/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const lt=document.getElementById('liToken').value.trim();
+    const lu=document.getElementById('liUrn').value.trim();
+    if(!lt||!lu){liSetStatus('⚠ Add your LinkedIn Access Token and Author URN in ⚙ Settings first.','error');btn.disabled=false;btn.textContent='🚀 Post to LinkedIn';return;}
+    const res=await fetch('/api/linkedin/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,linkedin_access_token:lt,linkedin_author_urn:lu})});
     if(!res.ok){const e=await res.json();throw new Error(e.detail||'Post failed');}
     const data=await res.json();
     liSetStatus('🎉 '+data.message,'success');

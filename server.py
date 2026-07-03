@@ -279,6 +279,8 @@ class LinkedInFormatRequest(BaseModel):
 
 class LinkedInPostRequest(BaseModel):
     text: str
+    linkedin_access_token: Optional[str] = None
+    linkedin_author_urn: Optional[str] = None
 
 
 @app.post("/api/linkedin/format")
@@ -310,11 +312,11 @@ async def linkedin_format(req: LinkedInFormatRequest):
 @app.post("/api/linkedin/post")
 async def linkedin_post(req: LinkedInPostRequest):
     """Post text to LinkedIn using stored credentials."""
-    token  = os.getenv("LINKEDIN_ACCESS_TOKEN", "")
-    author = os.getenv("LINKEDIN_AUTHOR_URN", "")
+    token  = req.linkedin_access_token or os.getenv("LINKEDIN_ACCESS_TOKEN", "")
+    author = req.linkedin_author_urn   or os.getenv("LINKEDIN_AUTHOR_URN", "")
     if not token or not author:
         from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="LinkedIn credentials not configured in .env")
+        raise HTTPException(status_code=400, detail="LinkedIn credentials not configured — add them in Settings")
 
     # Use the v2 UGC Posts API — stable, no versioning header required
     payload = {
