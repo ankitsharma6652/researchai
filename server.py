@@ -45,31 +45,6 @@ app.add_middleware(
 )
 
 
-# ── Keep-alive: ping self every 14 min so Render free tier never sleeps ───────
-async def _keep_alive():
-    import httpx
-    await asyncio.sleep(60)                          # wait for server to fully start
-    url = os.getenv("RENDER_EXTERNAL_URL", "")
-    if not url:
-        return                                        # local dev — skip
-    if not url.startswith("http"):
-        url = f"https://{url}"
-    ping_url = f"{url}/api/health"
-    while True:
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                await client.get(ping_url)
-            print(f"[keep-alive] pinged {ping_url}")
-        except Exception as e:
-            print(f"[keep-alive] ping failed: {e}")
-        await asyncio.sleep(14 * 60)                 # 14 minutes
-
-
-@app.on_event("startup")
-async def startup():
-    asyncio.create_task(_keep_alive())
-
-
 # ── Serve HTML frontend ──────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -80,13 +55,14 @@ async def root():
 # ── Request/response schemas ─────────────────────────────────────────────────
 class ResearchRequest(BaseModel):
     topic: str
-    provider: str = "groq"          # "groq" | "gemini" | "openai" | "openai-compatible"
+    provider: str = "groq"          # "groq" | "gemini" | "openai" | "openai-compatible" | "euron"
     model: Optional[str] = None     # override default model
     api_base: Optional[str] = None  # custom base URL for OpenAI-compatible endpoints
     # API keys supplied from browser (optional, fall back to .env)
     groq_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
+    euron_api_key: Optional[str] = None
     tavily_api_key: Optional[str] = None
 
 
@@ -111,6 +87,7 @@ async def research(req: ResearchRequest):
     groq_key   = req.groq_api_key   or os.getenv("GROQ_API_KEY",   "")
     gemini_key = req.gemini_api_key or os.getenv("GEMINI_API_KEY", "")
     openai_key = req.openai_api_key or os.getenv("OPENAI_API_KEY", "")
+    euron_key  = req.euron_api_key  or os.getenv("EURON_API_KEY",  "")
     tavily_key = req.tavily_api_key or os.getenv("TAVILY_API_KEY", "")
 
     async def event_generator():
@@ -128,6 +105,9 @@ async def research(req: ResearchRequest):
             if req.provider in ("openai", "openai-compatible") and not openai_key:
                 yield sse("error", {"message": "OpenAI API key not found. Please enter it in Settings or add OPENAI_API_KEY to your .env file."})
                 return
+            if req.provider == "euron" and not euron_key:
+                yield sse("error", {"message": "Euron API key not found. Please enter it in Settings (get one at euron.one)."})
+                return
             if not tavily_key:
                 yield sse("error", {"message": "Tavily API key not found. Please enter it in Settings or add TAVILY_API_KEY to your .env file."})
                 return
@@ -144,7 +124,7 @@ async def research(req: ResearchRequest):
             yield sse("status", {"phase": "init", "message": f"Initializing {req.provider.upper()} LLM…"})
             await asyncio.sleep(0.05)
 
-            llm   = get_llm(req.provider, req.model, api_base=req.api_base)
+            llm   = get_llm(req.provider, req.model, api_base=req.api_base, euron_key=euron_key)
             agent = build_reporter_agent(llm)
 
             yield sse("status", {"phase": "planning", "message": "🧠 Planning report — searching the web for context…"})
@@ -293,6 +273,7 @@ class LinkedInFormatRequest(BaseModel):
     groq_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
+    euron_api_key: Optional[str] = None
     api_base: Optional[str] = None
 
 
@@ -307,12 +288,13 @@ async def linkedin_format(req: LinkedInFormatRequest):
     gk = req.groq_api_key   or os.getenv("GROQ_API_KEY", "")
     mk = req.gemini_api_key or os.getenv("GEMINI_API_KEY", "")
     ok = req.openai_api_key or os.getenv("OPENAI_API_KEY", "")
+    ek = req.euron_api_key  or os.getenv("EURON_API_KEY", "")
     if gk: os.environ["GROQ_API_KEY"]   = gk
     if mk: os.environ["GEMINI_API_KEY"] = mk
     if ok: os.environ["OPENAI_API_KEY"] = ok
 
     try:
-        llm = get_llm(req.provider, req.model, api_base=req.api_base)
+        llm = get_llm(req.provider, req.model, api_base=req.api_base, euron_key=ek)
         from langchain_core.messages import HumanMessage
         prompt = LINKEDIN_FORMAT_PROMPT.format(report=req.report[:12000])
         response = llm.invoke([HumanMessage(content=prompt)])
@@ -412,6 +394,7 @@ class BlogGenerateRequest(BaseModel):
     groq_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
+    euron_api_key: Optional[str] = None
 
 
 class BlogPublishRequest(BaseModel):
@@ -429,12 +412,13 @@ async def blog_generate(req: BlogGenerateRequest):
     gk = req.groq_api_key   or os.getenv("GROQ_API_KEY", "")
     mk = req.gemini_api_key or os.getenv("GEMINI_API_KEY", "")
     ok = req.openai_api_key or os.getenv("OPENAI_API_KEY", "")
+    ek = req.euron_api_key  or os.getenv("EURON_API_KEY", "")
     if gk: os.environ["GROQ_API_KEY"]   = gk
     if mk: os.environ["GEMINI_API_KEY"] = mk
     if ok: os.environ["OPENAI_API_KEY"] = ok
 
     try:
-        llm = get_llm(req.provider, req.model, api_base=req.api_base)
+        llm = get_llm(req.provider, req.model, api_base=req.api_base, euron_key=ek)
         from langchain_core.messages import HumanMessage
         prompt = BLOG_WRITER_PROMPT.format(report=req.report[:14000])
         response = llm.invoke([HumanMessage(content=prompt)])

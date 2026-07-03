@@ -268,7 +268,9 @@ For Conclusion/Summary:
 
 # ─── Utility Functions ───────────────────────────────────────────────────────
 
-def get_llm(provider: str = "groq", model: str = None, api_base: str = None):
+_EURON_BASE_URL = "https://api.euron.one/api/v1/euri"
+
+def get_llm(provider: str = "groq", model: str = None, api_base: str = None, euron_key: str = None):
     """Get LLM based on provider. Supports groq, gemini, openai, and any OpenAI-compatible endpoint."""
     if provider == "groq":
         from langchain_groq import ChatGroq
@@ -300,6 +302,14 @@ def get_llm(provider: str = "groq", model: str = None, api_base: str = None):
         # Tag so callers know to use json_mode instead of tool calling
         llm_obj._use_json_mode = (provider == "openai-compatible")
         return llm_obj
+
+    elif provider == "euron":
+        from langchain_openai import ChatOpenAI
+        key = euron_key or os.getenv("EURON_API_KEY", "")
+        if not key:
+            raise ValueError("EURON_API_KEY not set")
+        model_name = model or "gemini-2.5-flash"
+        return ChatOpenAI(model=model_name, temperature=0, api_key=key, base_url=_EURON_BASE_URL)
 
     else:
         raise ValueError(f"Unknown provider: {provider}")
