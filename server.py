@@ -45,6 +45,31 @@ app.add_middleware(
 )
 
 
+# ── Keep-alive: ping self every 14 min so Render free tier never sleeps ───────
+async def _keep_alive():
+    import httpx
+    await asyncio.sleep(60)                          # wait for server to fully start
+    url = os.getenv("RENDER_EXTERNAL_URL", "")
+    if not url:
+        return                                        # local dev — skip
+    if not url.startswith("http"):
+        url = f"https://{url}"
+    ping_url = f"{url}/api/health"
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                await client.get(ping_url)
+            print(f"[keep-alive] pinged {ping_url}")
+        except Exception as e:
+            print(f"[keep-alive] ping failed: {e}")
+        await asyncio.sleep(14 * 60)                 # 14 minutes
+
+
+@app.on_event("startup")
+async def startup():
+    asyncio.create_task(_keep_alive())
+
+
 # ── Serve HTML frontend ──────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def root():
