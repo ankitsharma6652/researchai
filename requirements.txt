@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sse-starlette
+python-dotenv
+langchain
+langchain-community
+langchain-groq
+langchain-google-genai
+langchain-openai
+langgraph
+tavily-python
+pydantic
+httpx
+requests
